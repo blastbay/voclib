@@ -347,7 +347,10 @@ static void voclib_initialize_filterbank ( voclib_instance* instance, int carrie
     double lastfreq = 0.0;
     double minfreq = 80.0;
     double maxfreq = instance->sample_rate;
-    maxfreq /= 4;
+    if ( maxfreq > 12000.0 )
+    {
+        maxfreq = 12000.0;
+    }
     step = pow ( ( maxfreq / minfreq ), ( 1.0 / instance->bands ) );
 
     for ( i = 0; i < instance->bands; ++i )
