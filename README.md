@@ -19,7 +19,7 @@ The vocoder performs approximately the following steps:
 
 There are a bunch of settings that can be tweaked to generate different types of effects; see the public API in voclib.h for more details. If you are adventurous, you can change the settings in the middle of the audio to generate transitions as well.
 
-#Command Line Shell
+# Command Line Shell
 In addition to the library itself, there is a shell program which takes two wave files as input and produces a third as its output. The shell depends on dr_wav from https://github.com/mackron/dr_libs - a copy of which is included in this repository as well.
 
 
@@ -27,8 +27,8 @@ To build the shell, simply compile vocshell.c and make sure that both dr_wav.h a
 
 # License
 This software is available under 2 licenses -- choose whichever you prefer.
-------------------------------------------------------------------------------
-ALTERNATIVE A - MIT No Attribution License
+
+## ALTERNATIVE A - MIT No Attribution License
 Copyright (c) 2019 Philip Bennefall
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -38,6 +38,7 @@ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
 of the Software, and to permit persons to whom the Software is furnished to do
 so.
 
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -45,12 +46,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-------------------------------------------------------------------------------
-ALTERNATIVE B - Public Domain (www.unlicense.org)
+
+##ALTERNATIVE B - Public Domain (www.unlicense.org)
 This is free and unencumbered software released into the public domain.
 Anyone is free to copy, modify, publish, use, compile, sell, or distribute this
 software, either in source code form or as a compiled binary, for any purpose,
 commercial or non-commercial, and by any means.
+
 
 In jurisdictions that recognize copyright laws, the author or authors of this
 software dedicate any and all copyright interest in the software to the public
@@ -64,4 +66,3 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
 ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-------------------------------------------------------------------------------
