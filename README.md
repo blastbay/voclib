@@ -1,26 +1,31 @@
 # Introduction
 This is an implementation of a traditional channel vocoder which is generally used to add interesting effects to speech.
 
+
 The vocoder is written in C and is distributed as a single header file. It should compile on pretty much any platform with a C89 compiler as long as floats are available. If you find a platform on which it does not work, please let me know.
+
 
 This is not the fastest implementation around but it should still be fast enough for real-time use.
 
 # Description
 A vocoder takes two input signals and produces a third signal as its output. The first signal, called the carrier, is usually an instrument or similar (white noise works well too). The carrier should generally have a lot of harmonics. The second input signal, called the modulator, is most often comprised of human speech. The vocoder superimposes the characteristics of the speech upon the instrument, so that the result sounds as if the instrument is singing.
 
+
 The vocoder performs approximately the following steps:
 * Divide the carrier and the modulator into frequency bands, the sum of which cover the entire frequency spectrum.
 * Smooth each modulator band with an envelope follower.
 * Multiply the resulting envelope for each band with the corresponding band of the carrier.
+
 
 There are a bunch of settings that can be tweaked to generate different types of effects; see the public API in voclib.h for more details. If you are adventurous, you can change the settings in the middle of the audio to generate transitions as well.
 
 #Command Line Shell
 In addition to the library itself, there is a shell program which takes two wave files as input and produces a third as its output. The shell depends on dr_wav from https://github.com/mackron/dr_libs - a copy of which is included in this repository as well.
 
+
 To build the shell, simply compile vocshell.c and make sure that both dr_wav.h and voclib.h are on your include path.
 
-#License
+# License
 This software is available under 2 licenses -- choose whichever you prefer.
 ------------------------------------------------------------------------------
 ALTERNATIVE A - MIT No Attribution License
