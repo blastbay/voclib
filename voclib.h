@@ -210,13 +210,13 @@ static VOCLIB_INLINE float voclib_BiQuad ( float sample, voclib_biquad* b )
 /* filter types. */
 enum
 {
-    LPF, /* low pass filter */
-    HPF, /* High pass filter */
-    BPF, /* band pass filter */
-    NOTCH, /* Notch Filter */
-    PEQ, /* Peaking band EQ filter */
-    LSH, /* Low shelf filter */
-    HSH /* High shelf filter */
+    VOCLIB_LPF, /* low pass filter */
+    VOCLIB_HPF, /* High pass filter */
+    VOCLIB_BPF, /* band pass filter */
+    VOCLIB_NOTCH, /* Notch Filter */
+    VOCLIB_PEQ, /* Peaking band EQ filter */
+    VOCLIB_LSH, /* Low shelf filter */
+    VOCLIB_HSH /* High shelf filter */
 };
 
 /* sets up a BiQuad Filter. */
@@ -229,16 +229,16 @@ static void voclib_BiQuad_new ( voclib_biquad* b, int type, float dbGain, /* gai
     float a0, a1, a2, b0, b1, b2;
 
     /* setup variables. */
-    A = pow ( 10, dbGain / 40 );
-    omega = 2 * VOCLIB_M_PI * freq / srate;
-    sn = sin ( omega );
-    cs = cos ( omega );
-    alpha = sn * sinh ( VOCLIB_M_LN2 / 2 * bandwidth * omega / sn );
-    beta = sqrt ( A + A );
+    A = ( float ) pow ( 10, dbGain / 40.0f );
+    omega = ( float ) ( 2.0 * VOCLIB_M_PI * freq / srate );
+    sn = ( float ) sin ( omega );
+    cs = ( float ) cos ( omega );
+    alpha = sn * ( float ) sinh ( VOCLIB_M_LN2 / 2 * bandwidth * omega / sn );
+    beta = ( float ) sqrt ( A + A );
 
     switch ( type )
     {
-        case LPF:
+        case VOCLIB_LPF:
             b0 = ( 1 - cs ) / 2;
             b1 = 1 - cs;
             b2 = ( 1 - cs ) / 2;
@@ -246,7 +246,7 @@ static void voclib_BiQuad_new ( voclib_biquad* b, int type, float dbGain, /* gai
             a1 = -2 * cs;
             a2 = 1 - alpha;
             break;
-        case HPF:
+        case VOCLIB_HPF:
             b0 = ( 1 + cs ) / 2;
             b1 = - ( 1 + cs );
             b2 = ( 1 + cs ) / 2;
@@ -254,7 +254,7 @@ static void voclib_BiQuad_new ( voclib_biquad* b, int type, float dbGain, /* gai
             a1 = -2 * cs;
             a2 = 1 - alpha;
             break;
-        case BPF:
+        case VOCLIB_BPF:
             b0 = alpha;
             b1 = 0;
             b2 = -alpha;
@@ -262,7 +262,7 @@ static void voclib_BiQuad_new ( voclib_biquad* b, int type, float dbGain, /* gai
             a1 = -2 * cs;
             a2 = 1 - alpha;
             break;
-        case NOTCH:
+        case VOCLIB_NOTCH:
             b0 = 1;
             b1 = -2 * cs;
             b2 = 1;
@@ -270,7 +270,7 @@ static void voclib_BiQuad_new ( voclib_biquad* b, int type, float dbGain, /* gai
             a1 = -2 * cs;
             a2 = 1 - alpha;
             break;
-        case PEQ:
+        case VOCLIB_PEQ:
             b0 = 1 + ( alpha * A );
             b1 = -2 * cs;
             b2 = 1 - ( alpha * A );
@@ -278,7 +278,7 @@ static void voclib_BiQuad_new ( voclib_biquad* b, int type, float dbGain, /* gai
             a1 = -2 * cs;
             a2 = 1 - ( alpha / A );
             break;
-        case LSH:
+        case VOCLIB_LSH:
             b0 = A * ( ( A + 1 ) - ( A - 1 ) * cs + beta * sn );
             b1 = 2 * A * ( ( A - 1 ) - ( A + 1 ) * cs );
             b2 = A * ( ( A + 1 ) - ( A - 1 ) * cs - beta * sn );
@@ -286,7 +286,7 @@ static void voclib_BiQuad_new ( voclib_biquad* b, int type, float dbGain, /* gai
             a1 = -2 * ( ( A - 1 ) + ( A + 1 ) * cs );
             a2 = ( A + 1 ) + ( A - 1 ) * cs - beta * sn;
             break;
-        case HSH:
+        case VOCLIB_HSH:
             b0 = A * ( ( A + 1 ) + ( A - 1 ) * cs + beta * sn );
             b1 = -2 * A * ( ( A - 1 ) + ( A + 1 ) * cs );
             b2 = A * ( ( A + 1 ) + ( A - 1 ) * cs - beta * sn );
@@ -332,7 +332,7 @@ static void voclib_envelope_reset ( voclib_envelope* envelope )
 static VOCLIB_INLINE float voclib_envelope_tick ( voclib_envelope* envelope, float sample )
 {
     const float coef = envelope->coef;
-    envelope->history[0] = ( ( 1.0f - coef ) * fabs ( sample ) ) + ( coef * envelope->history[0] );
+    envelope->history[0] = ( float ) ( ( 1.0f - coef ) * fabs ( sample ) ) + ( coef * envelope->history[0] );
     envelope->history[1] = ( ( 1.0f - coef ) * envelope->history[0] ) + ( coef * envelope->history[1] );
     envelope->history[2] = ( ( 1.0f - coef ) * envelope->history[1] ) + ( coef * envelope->history[2] );
     envelope->history[3] = ( ( 1.0f - coef ) * envelope->history[2] ) + ( coef * envelope->history[3] );
@@ -371,7 +371,7 @@ static void voclib_initialize_filterbank ( voclib_instance* instance, int carrie
 
         if ( !carrier_only )
         {
-            voclib_BiQuad_new ( &instance->analysis_bands[i].filters[0], BPF, 0.0f, ( float ) lastfreq, ( float ) instance->sample_rate, ( float ) bandwidth );
+            voclib_BiQuad_new ( &instance->analysis_bands[i].filters[0], VOCLIB_BPF, 0.0f, ( float ) lastfreq, ( float ) instance->sample_rate, ( float ) bandwidth );
             for ( i2 = 1; i2 < instance->filters_per_band; ++i2 )
             {
                 instance->analysis_bands[i].filters[i2].a0 = instance->analysis_bands[i].filters[0].a0;
@@ -384,7 +384,7 @@ static void voclib_initialize_filterbank ( voclib_instance* instance, int carrie
 
         if ( instance->formant_shift != 1.0f )
         {
-            voclib_BiQuad_new ( &instance->synthesis_bands[i].filters[0], BPF, 0.0f, ( float ) ( lastfreq * instance->formant_shift ), ( float ) instance->sample_rate, ( float ) bandwidth );
+            voclib_BiQuad_new ( &instance->synthesis_bands[i].filters[0], VOCLIB_BPF, 0.0f, ( float ) ( lastfreq * instance->formant_shift ), ( float ) instance->sample_rate, ( float ) bandwidth );
         }
         else
         {
