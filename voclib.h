@@ -296,6 +296,7 @@ static void voclib_BiQuad_new ( voclib_biquad* b, int type, float dbGain, /* gai
             break;
         default:
             assert ( 0 ); /* Misuse. */
+            return;
     }
 
     /* precompute the coefficients. */

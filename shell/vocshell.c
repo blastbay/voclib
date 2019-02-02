@@ -31,12 +31,12 @@ int write_wave_file ( const char* filename, unsigned int sample_rate, unsigned i
         }
     }
 
-    converted = ( drwav_int16* ) malloc ( ( frames * channels ) * sizeof ( drwav_int16 ) );
+    converted = ( drwav_int16* ) malloc ( ( size_t ) ( frames * channels ) * sizeof ( drwav_int16 ) );
     if ( converted == NULL )
     {
         return 0;
     }
-    drwav_f32_to_s16 ( converted, buffer, frames * channels );
+    drwav_f32_to_s16 ( converted, buffer, ( size_t ) frames * channels );
 
     outfile = drwav_open_file_write_sequential ( filename, &format, frames * channels );
     if ( outfile == NULL )
@@ -220,7 +220,7 @@ int main ( int argc, const char** argv )
     voclib_set_reaction_time ( &vocoder, ( float ) reaction_time );
     voclib_set_formant_shift ( &vocoder, ( float ) formant_shift );
 
-    output_buffer = ( float* ) malloc ( ( carrier_frames * carrier_channels ) * sizeof ( float ) );
+    output_buffer = ( float* ) malloc ( ( size_t ) ( carrier_frames * carrier_channels ) * sizeof ( float ) );
     if ( output_buffer == NULL )
     {
         free ( carrier_buffer );
@@ -229,7 +229,7 @@ int main ( int argc, const char** argv )
         return 1;
     }
 
-    voclib_process ( &vocoder, carrier_buffer, modulator_buffer, output_buffer, carrier_frames );
+    voclib_process ( &vocoder, carrier_buffer, modulator_buffer, output_buffer, ( unsigned int ) carrier_frames );
 
     free ( carrier_buffer );
     free ( modulator_buffer );
