@@ -187,7 +187,7 @@ int main ( int argc, const char** argv )
     }
     if ( modulator_channels > 1 )
     {
-        free ( modulator_buffer );
+        free ( carrier_buffer );
         free ( modulator_buffer );
         printf ( "Error: The modulator has %u channels.\nThe maximum allowed number of channels is 1.\nThis restriction may be lifted in a future version.\n", modulator_channels );
         return 1;
