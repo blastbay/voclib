@@ -55,6 +55,22 @@ int write_wave_file ( const char* filename, unsigned int sample_rate, unsigned i
     return 1;
 }
 
+float vocshell_find_peak ( float* buffer, drwav_uint64 frames )
+{
+    drwav_uint64 i;
+    float peak = 0.0f;
+
+    for ( i = 0; i < frames; ++i )
+    {
+        float x = ( float ) fabs ( buffer[i] );
+        if ( x > peak )
+        {
+            peak = x;
+        }
+    }
+    return peak;
+}
+
 int main ( int argc, const char** argv )
 {
     unsigned long bands = 24;
@@ -66,11 +82,12 @@ int main ( int argc, const char** argv )
     unsigned int carrier_sample_rate, carrier_channels, modulator_sample_rate, modulator_channels;
     float* carrier_buffer;
     float* modulator_buffer;
-    float* output_buffer;
     const char* carrier_filename = NULL;
     const char* modulator_filename = NULL;
     const char* output_filename = NULL;
     int i;
+    float carrier_peak;
+    float output_peak;
 
     if ( argc == 1 )
     {
@@ -178,11 +195,11 @@ int main ( int argc, const char** argv )
         return 1;
     }
 
-    if ( carrier_channels > 1 )
+    if ( carrier_channels > 2 )
     {
         free ( carrier_buffer );
         free ( modulator_buffer );
-        printf ( "Error: The carrier has %u channels.\nThe maximum allowed number of channels is 1.\nThis restriction may be lifted in a future version.\n", carrier_channels );
+        printf ( "Error: The carrier has %u channels.\nThe maximum allowed number of channels is 2.\nThis restriction may be lifted in a future version.\n", carrier_channels );
         return 1;
     }
     if ( modulator_channels > 1 )
@@ -216,32 +233,27 @@ int main ( int argc, const char** argv )
     assert ( modulator_channels == carrier_channels );
     assert ( modulator_sample_rate == carrier_sample_rate );
 
-    voclib_initialize ( &vocoder, ( unsigned char ) bands, ( unsigned char ) filters_per_band, carrier_sample_rate );
+    voclib_initialize ( &vocoder, ( unsigned char ) bands, ( unsigned char ) filters_per_band, carrier_sample_rate, ( unsigned char ) carrier_channels );
     voclib_set_reaction_time ( &vocoder, ( float ) reaction_time );
     voclib_set_formant_shift ( &vocoder, ( float ) formant_shift );
 
-    output_buffer = ( float* ) malloc ( ( size_t ) ( carrier_frames * carrier_channels ) * sizeof ( float ) );
-    if ( output_buffer == NULL )
-    {
-        free ( carrier_buffer );
-        free ( modulator_buffer );
-        printf ( "Error: Failed to allocate memory for the output buffer.\n" );
-        return 1;
-    }
+    carrier_peak = vocshell_find_peak ( carrier_buffer, carrier_frames * carrier_channels );
 
-    voclib_process ( &vocoder, carrier_buffer, modulator_buffer, output_buffer, ( unsigned int ) carrier_frames );
+    voclib_process ( &vocoder, carrier_buffer, modulator_buffer, carrier_buffer, ( unsigned int ) carrier_frames );
 
-    free ( carrier_buffer );
     free ( modulator_buffer );
 
-    if ( !write_wave_file ( output_filename, carrier_sample_rate, carrier_channels, output_buffer, carrier_frames, 12.0f ) )
+    output_peak = vocshell_find_peak ( carrier_buffer, carrier_frames * carrier_channels );
+    output_peak = carrier_peak / output_peak;
+
+    if ( !write_wave_file ( output_filename, carrier_sample_rate, carrier_channels, carrier_buffer, carrier_frames, output_peak ) )
     {
-        free ( output_buffer );
+        free ( carrier_buffer );
         printf ( "Error: Could not write output file \"%s\".\n", output_filename );
         return 1;
     }
 
-    free ( output_buffer );
+    free ( carrier_buffer );
 
     printf ( "Success.\n" );
     return 0;

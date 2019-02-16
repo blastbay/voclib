@@ -1,5 +1,5 @@
 /* Vocoder Library
-* Voclib version 1.0 - 2019-01-27
+* Voclib version 1.1 - 2019-02-16
 *
 * Philip Bennefall - philip@blastbay.com
 *
@@ -42,18 +42,24 @@ extern "C" {
     * filters_per_band determines the steapness with which the filterbank divides the signal; a value of 6 is recommended.
     * filters_per_band must be between 1 and VOCLIB_MAX_FILTERS_PER_BAND (inclusive).
     * sample_rate is the number of samples per second in hertz, and should be between 8000 and 192000 (inclusive).
+    * carrier_channels is the number of channels that the carrier has, and should be between 1 and 2 (inclusive).
+    * Note: The modulator must always have only one channel.
     * Returns nonzero (true) on success or 0 (false) on failure.
     * The function will only fail if one or more of the parameters are invalid.
     */
-    int voclib_initialize ( voclib_instance* instance, unsigned char bands, unsigned char filters_per_band, unsigned int sample_rate );
+    int voclib_initialize ( voclib_instance* instance, unsigned char bands, unsigned char filters_per_band, unsigned int sample_rate, unsigned char carrier_channels );
 
     /* Run the vocoder.
     *
     * Call this function continuously to generate your output.
     * carrier_buffer and modulator_buffer should contain the carrier and modulator signals respectively.
-    * output_buffer will be filled with the result.
-    * output_buffer may be the same pointer as either carrier_buffer or modulator_buffer; the process is performed in place.
-    * frames specifies the number of sample frames that should be processed. All three buffers must have at least this amount of space.
+    * The modulator must always have one channel.
+    * If the carrier has two channels, the samples in carrier_buffer must be interleaved.
+    * output_buffer will be filled with the result, and must be able to hold as many channels as the carrier.
+    * If the carrier has two channels, the output buffer will be filled with interleaved samples.
+    * output_buffer may be the same pointer as either carrier_buffer or modulator_buffer as long as it can hold the same number of channels as the carrier.
+    * The processing is performed in place.
+    * frames specifies the number of sample frames that should be processed.
     * Returns nonzero (true) on success or 0 (false) on failure.
     * The function will only fail if one or more of the parameters are invalid.
     */
@@ -123,12 +129,13 @@ extern "C" {
     {
         voclib_band analysis_bands[VOCLIB_MAX_BANDS]; /* The filterbank used for analysis (these are applied to the modulator). */
         voclib_envelope analysis_envelopes[VOCLIB_MAX_BANDS]; /* The envelopes used to smooth the analysis bands. */
-        voclib_band synthesis_bands[VOCLIB_MAX_BANDS]; /* The filterbank used for synthesis (these are applied to the carrier). */
+        voclib_band synthesis_bands[VOCLIB_MAX_BANDS * 2]; /* The filterbank used for synthesis (these are applied to the carrier). The second half of the array is only used for stereo carriers. */
         float reaction_time; /* In seconds. Higher values make the vocoder respond more slowly to changes in the modulator. */
         float formant_shift; /* In octaves. 1.0 is unchanged. */
         unsigned int sample_rate; /* In hertz. */
         unsigned char bands;
         unsigned char filters_per_band;
+        unsigned char carrier_channels;
     };
 
 #ifdef __cplusplus
@@ -395,6 +402,13 @@ static void voclib_initialize_filterbank ( voclib_instance* instance, int carrie
             instance->synthesis_bands[i].filters[0].a3 = instance->analysis_bands[i].filters[0].a3;
             instance->synthesis_bands[i].filters[0].a4 = instance->analysis_bands[i].filters[0].a4;
         }
+
+        instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[0].a0 = instance->synthesis_bands[i].filters[0].a0;
+        instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[0].a1 = instance->synthesis_bands[i].filters[0].a1;
+        instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[0].a2 = instance->synthesis_bands[i].filters[0].a2;
+        instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[0].a3 = instance->synthesis_bands[i].filters[0].a3;
+        instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[0].a4 = instance->synthesis_bands[i].filters[0].a4;
+
         for ( i2 = 1; i2 < instance->filters_per_band; ++i2 )
         {
             instance->synthesis_bands[i].filters[i2].a0 = instance->synthesis_bands[i].filters[0].a0;
@@ -402,6 +416,12 @@ static void voclib_initialize_filterbank ( voclib_instance* instance, int carrie
             instance->synthesis_bands[i].filters[i2].a2 = instance->synthesis_bands[i].filters[0].a2;
             instance->synthesis_bands[i].filters[i2].a3 = instance->synthesis_bands[i].filters[0].a3;
             instance->synthesis_bands[i].filters[i2].a4 = instance->synthesis_bands[i].filters[0].a4;
+
+            instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[i2].a0 = instance->synthesis_bands[i].filters[0].a0;
+            instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[i2].a1 = instance->synthesis_bands[i].filters[0].a1;
+            instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[i2].a2 = instance->synthesis_bands[i].filters[0].a2;
+            instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[i2].a3 = instance->synthesis_bands[i].filters[0].a3;
+            instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[i2].a4 = instance->synthesis_bands[i].filters[0].a4;
         }
     }
 
@@ -419,7 +439,7 @@ static void voclib_initialize_envelopes ( voclib_instance* instance )
     }
 }
 
-int voclib_initialize ( voclib_instance* instance, unsigned char bands, unsigned char filters_per_band, unsigned int sample_rate )
+int voclib_initialize ( voclib_instance* instance, unsigned char bands, unsigned char filters_per_band, unsigned int sample_rate, unsigned char carrier_channels )
 {
     if ( instance == NULL )
     {
@@ -437,12 +457,17 @@ int voclib_initialize ( voclib_instance* instance, unsigned char bands, unsigned
     {
         return 0;
     }
+    if ( carrier_channels < 1 || carrier_channels > 2 )
+    {
+        return 0;
+    }
 
     instance->reaction_time = 0.03f;
     instance->formant_shift = 1.0f;
     instance->sample_rate = sample_rate;
     instance->bands = bands;
     instance->filters_per_band = filters_per_band;
+    instance->carrier_channels = carrier_channels;
 
     voclib_reset_history ( instance );
     voclib_initialize_filterbank ( instance, 0 );
@@ -491,27 +516,65 @@ int voclib_process ( voclib_instance* instance, const float* carrier_buffer, con
         return 0;
     }
 
-    for ( i = 0; i < frames; ++i )
+    if ( instance->carrier_channels == 2 )
     {
-        unsigned char i2;
-        float out = 0.0f;
 
-        /* Run the bands in parallel and accumulate the output. */
-        for ( i2 = 0; i2 < bands; ++i2 )
+        /* The carrier has two channels and the modulator has 1. */
+        for ( i = 0; i < frames * 2; i += 2, ++modulator_buffer )
         {
-            unsigned char i3;
-            float analysis_band = voclib_BiQuad ( modulator_buffer[i], &instance->analysis_bands[i2].filters[0] );
-            float synthesis_band = voclib_BiQuad ( carrier_buffer[i], &instance->synthesis_bands[i2].filters[0] );
+            unsigned char i2;
+            float out_left = 0.0f;
+            float out_right = 0.0f;
 
-            for ( i3 = 1; i3 < filters_per_band; ++i3 )
+            /* Run the bands in parallel and accumulate the output. */
+            for ( i2 = 0; i2 < bands; ++i2 )
             {
-                analysis_band = voclib_BiQuad ( analysis_band, &instance->analysis_bands[i2].filters[i3] );
-                synthesis_band = voclib_BiQuad ( synthesis_band, &instance->synthesis_bands[i2].filters[i3] );
+                unsigned char i3;
+                float analysis_band = voclib_BiQuad ( *modulator_buffer, &instance->analysis_bands[i2].filters[0] );
+                float synthesis_band_left = voclib_BiQuad ( carrier_buffer[i], &instance->synthesis_bands[i2].filters[0] );
+                float synthesis_band_right = voclib_BiQuad ( carrier_buffer[i + 1], &instance->synthesis_bands[i2 + VOCLIB_MAX_BANDS].filters[0] );
+
+                for ( i3 = 1; i3 < filters_per_band; ++i3 )
+                {
+                    analysis_band = voclib_BiQuad ( analysis_band, &instance->analysis_bands[i2].filters[i3] );
+                    synthesis_band_left = voclib_BiQuad ( synthesis_band_left, &instance->synthesis_bands[i2].filters[i3] );
+                    synthesis_band_right = voclib_BiQuad ( synthesis_band_right, &instance->synthesis_bands[i2 + VOCLIB_MAX_BANDS].filters[i3] );
+                }
+                analysis_band = voclib_envelope_tick ( &instance->analysis_envelopes[i2], analysis_band );
+                out_left += synthesis_band_left * analysis_band;
+                out_right += synthesis_band_right * analysis_band;
             }
-            analysis_band = voclib_envelope_tick ( &instance->analysis_envelopes[i2], analysis_band );
-            out += synthesis_band * analysis_band;
+            output_buffer[i] = out_left;
+            output_buffer[i + 1] = out_right;
         }
-        output_buffer[i] = out;
+
+    }
+    else
+    {
+
+        /* Both the carrier and the modulator have a single channel. */
+        for ( i = 0; i < frames; ++i )
+        {
+            unsigned char i2;
+            float out = 0.0f;
+
+            /* Run the bands in parallel and accumulate the output. */
+            for ( i2 = 0; i2 < bands; ++i2 )
+            {
+                unsigned char i3;
+                float analysis_band = voclib_BiQuad ( modulator_buffer[i], &instance->analysis_bands[i2].filters[0] );
+                float synthesis_band = voclib_BiQuad ( carrier_buffer[i], &instance->synthesis_bands[i2].filters[0] );
+
+                for ( i3 = 1; i3 < filters_per_band; ++i3 )
+                {
+                    analysis_band = voclib_BiQuad ( analysis_band, &instance->analysis_bands[i2].filters[i3] );
+                    synthesis_band = voclib_BiQuad ( synthesis_band, &instance->synthesis_bands[i2].filters[i3] );
+                }
+                analysis_band = voclib_envelope_tick ( &instance->analysis_envelopes[i2], analysis_band );
+                out += synthesis_band * analysis_band;
+            }
+            output_buffer[i] = out;
+        }
     }
 
     return 1;
@@ -554,6 +617,12 @@ float voclib_get_formant_shift ( const voclib_instance* instance )
 #endif /* VOCLIB_IMPLEMENTATION */
 
 /* REVISION HISTORY
+*
+* Version 1.1 - 2019-02-16
+* Breaking change: Introduced a new argument to voclib_initialize called carrier_channels. This allows the vocoder to output stereo natively.
+* Better assignment of band frequencies when using lower sample rates.
+* The shell now automatically normalizes the output file to match the peak amplitude in the carrier.
+* Fixed a memory corruption bug in the shell which would occur in response to an error condition.
 *
 * Version 1.0 - 2019-01-27
 * Initial release.
