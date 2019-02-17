@@ -148,7 +148,6 @@ extern "C" {
 #ifdef VOCLIB_IMPLEMENTATION
 
 #include <math.h>
-#include <stdlib.h>
 #include <assert.h>
 
 #ifdef _MSC_VER
@@ -441,7 +440,7 @@ static void voclib_initialize_envelopes ( voclib_instance* instance )
 
 int voclib_initialize ( voclib_instance* instance, unsigned char bands, unsigned char filters_per_band, unsigned int sample_rate, unsigned char carrier_channels )
 {
-    if ( instance == NULL )
+    if ( !instance )
     {
         return 0;
     }
@@ -499,15 +498,15 @@ int voclib_process ( voclib_instance* instance, const float* carrier_buffer, con
     const unsigned char bands = instance->bands;
     const unsigned char filters_per_band = instance->filters_per_band;
 
-    if ( carrier_buffer == NULL )
+    if ( !carrier_buffer )
     {
         return 0;
     }
-    if ( modulator_buffer == NULL )
+    if ( !modulator_buffer )
     {
         return 0;
     }
-    if ( output_buffer == NULL )
+    if ( !output_buffer )
     {
         return 0;
     }
