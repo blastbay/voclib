@@ -7,6 +7,17 @@ The vocoder is written in C and is distributed as a single header file. It shoul
 
 This is not the fastest implementation around but it should still be fast enough for real-time use.
 
+# Features
+voclib has the following notable features:
+* Easy to integrate (the library is stored in a single file).
+* Runs in both stereo and mono.
+* Configure the number of bands and the number of filters used per band.
+* Configure how quickly the output follows changes in the voice.
+* Shift the formants of the voice.
+* High quality output.
+* Portable ANSI C89 code with no external dependencies.
+* No licensing restrictions (public domain or MIT licensed with no attribution requirements).
+
 # Description
 A vocoder takes two input signals and produces a third signal as its output. The first signal, called the carrier, is usually an instrument or similar (white noise works well too). The carrier should generally have a lot of harmonics. The second input signal, called the modulator, is most often comprised of human speech. The vocoder superimposes the characteristics of the speech upon the instrument, so that the result sounds as if the instrument is singing.
 
