@@ -487,6 +487,7 @@ void voclib_reset_history ( voclib_instance* instance )
         {
             voclib_BiQuad_reset ( &instance->analysis_bands[i].filters[i2] );
             voclib_BiQuad_reset ( &instance->synthesis_bands[i].filters[i2] );
+            voclib_BiQuad_reset ( &instance->synthesis_bands[i + VOCLIB_MAX_BANDS].filters[i2] );
         }
         voclib_envelope_reset ( &instance->analysis_envelopes[i] );
     }
