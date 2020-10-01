@@ -41,19 +41,19 @@ int write_wave_file ( const char* filename, unsigned int sample_rate, unsigned i
     outfile = drwav_open_file_write_sequential ( filename, &format, frames * channels );
     if ( outfile == NULL )
     {
-        free(converted);
+        free ( converted );
         return 0;
     }
 
     if ( drwav_write ( outfile, frames * channels, &converted[0] ) != frames * channels )
     {
         drwav_close ( outfile );
-        free(converted);
+        free ( converted );
         return 0;
     }
 
     drwav_close ( outfile );
-    free(converted);
+    free ( converted );
     return 1;
 }
 
